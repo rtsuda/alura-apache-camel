@@ -24,6 +24,13 @@ public class RotaPedidos {
 //				to("file:saida");
 				
 				from("file:pedidos?delay=5s&noop=true").
+				routeId("rota pedidos").
+				multicast().
+					to("direct:http").
+					to("direct:soap");
+				
+				from("direct:http").
+				routeId("rota-http").
 					setProperty("pedidoId", xpath("/pedido/id/text()")).
 					setProperty("clienteId", xpath("/pedido/pagamento/email-titular/text()")).
 					split().
@@ -38,6 +45,11 @@ public class RotaPedidos {
 					setHeader(Exchange.HTTP_METHOD, HttpMethods.GET).
 					setHeader(Exchange.HTTP_QUERY, simple("clienteId=${property.clienteId}&pedidoId=${property.pedidoId}&ebookId=${property.ebookId}")).
 				to("http4://localhost:8080/webservices/ebook/item");
+				
+				from("direct:soap").
+					routeId("rota-soap").
+					setBody(constant("<envelope>teste</envelope>")).
+				to("mock:soap");
 				
 			}		
 		});
